@@ -1,7 +1,9 @@
 <script>
   import { onMount, onDestroy } from 'svelte'
   import * as fabric from 'fabric'
-  import { document, layers, canvas, activeTool, selectedLayerIds, layerActions, LayerType, Tool, pages, currentPageIndex } from './layerStore'
+  import { document, layers, canvas, activeTool, selectedLayerIds, layerActions, LayerType, Tool, pages, currentPageIndex, guides, grid, snap } from './layerStore'
+  import SmartGuides from './SmartGuides.svelte'
+  import Rulers from './Rulers.svelte'
 
   let canvasElement
   let fabricCanvas
@@ -61,6 +63,12 @@
   function handleObjectMoving(e) {
     const obj = e.target
     if (!obj || !obj.layerId) return
+
+    // Apply snapping if enabled
+    if ($snap.enabled) {
+      applySnapping(obj)
+    }
+
     // Real-time update (debounced via Fabric.js)
     updateLayerFromObject(obj, false)
   }
@@ -85,6 +93,148 @@
     }
 
     layerActions.updateLayer(obj.layerId, updates)
+  }
+
+  // Snapping logic
+  function applySnapping(obj) {
+    const threshold = $snap.threshold
+    let snappedLeft = obj.left
+    let snappedTop = obj.top
+
+    const objBounds = {
+      left: obj.left,
+      top: obj.top,
+      right: obj.left + (obj.width * obj.scaleX),
+      bottom: obj.top + (obj.height * obj.scaleY),
+      centerX: obj.left + (obj.width * obj.scaleX) / 2,
+      centerY: obj.top + (obj.height * obj.scaleY) / 2
+    }
+
+    // Snap to guides
+    if ($snap.toGuides && $guides.visible) {
+      // Snap to vertical guides
+      for (const guideX of $guides.vertical) {
+        // Snap left edge
+        if (Math.abs(objBounds.left - guideX) < threshold) {
+          snappedLeft = guideX
+        }
+        // Snap right edge
+        else if (Math.abs(objBounds.right - guideX) < threshold) {
+          snappedLeft = guideX - (obj.width * obj.scaleX)
+        }
+        // Snap center
+        else if (Math.abs(objBounds.centerX - guideX) < threshold) {
+          snappedLeft = guideX - (obj.width * obj.scaleX) / 2
+        }
+      }
+
+      // Snap to horizontal guides
+      for (const guideY of $guides.horizontal) {
+        // Snap top edge
+        if (Math.abs(objBounds.top - guideY) < threshold) {
+          snappedTop = guideY
+        }
+        // Snap bottom edge
+        else if (Math.abs(objBounds.bottom - guideY) < threshold) {
+          snappedTop = guideY - (obj.height * obj.scaleY)
+        }
+        // Snap center
+        else if (Math.abs(objBounds.centerY - guideY) < threshold) {
+          snappedTop = guideY - (obj.height * obj.scaleY) / 2
+        }
+      }
+    }
+
+    // Snap to grid
+    if ($snap.toGrid && $grid.enabled) {
+      const gridSize = $grid.size
+      // Snap to grid points
+      const nearestGridX = Math.round(objBounds.left / gridSize) * gridSize
+      const nearestGridY = Math.round(objBounds.top / gridSize) * gridSize
+
+      if (Math.abs(objBounds.left - nearestGridX) < threshold) {
+        snappedLeft = nearestGridX
+      }
+      if (Math.abs(objBounds.top - nearestGridY) < threshold) {
+        snappedTop = nearestGridY
+      }
+    }
+
+    // Snap to canvas edges
+    if ($snap.toCanvas) {
+      // Snap left edge
+      if (Math.abs(objBounds.left) < threshold) {
+        snappedLeft = 0
+      }
+      // Snap top edge
+      if (Math.abs(objBounds.top) < threshold) {
+        snappedTop = 0
+      }
+      // Snap right edge
+      if (Math.abs(objBounds.right - $canvas.width) < threshold) {
+        snappedLeft = $canvas.width - (obj.width * obj.scaleX)
+      }
+      // Snap bottom edge
+      if (Math.abs(objBounds.bottom - $canvas.height) < threshold) {
+        snappedTop = $canvas.height - (obj.height * obj.scaleY)
+      }
+      // Snap center to canvas center
+      if (Math.abs(objBounds.centerX - $canvas.width / 2) < threshold) {
+        snappedLeft = ($canvas.width - (obj.width * obj.scaleX)) / 2
+      }
+      if (Math.abs(objBounds.centerY - $canvas.height / 2) < threshold) {
+        snappedTop = ($canvas.height - (obj.height * obj.scaleY)) / 2
+      }
+    }
+
+    // Snap to other objects
+    if ($snap.toObjects) {
+      fabricCanvas.forEachObject(otherObj => {
+        if (otherObj === obj || !otherObj.layerId) return
+
+        const otherBounds = {
+          left: otherObj.left,
+          top: otherObj.top,
+          right: otherObj.left + (otherObj.width * otherObj.scaleX),
+          bottom: otherObj.top + (otherObj.height * otherObj.scaleY),
+          centerX: otherObj.left + (otherObj.width * otherObj.scaleX) / 2,
+          centerY: otherObj.top + (otherObj.height * otherObj.scaleY) / 2
+        }
+
+        // Snap to other object's edges and center
+        // Left edge alignments
+        if (Math.abs(objBounds.left - otherBounds.left) < threshold) {
+          snappedLeft = otherBounds.left
+        } else if (Math.abs(objBounds.left - otherBounds.right) < threshold) {
+          snappedLeft = otherBounds.right
+        } else if (Math.abs(objBounds.right - otherBounds.left) < threshold) {
+          snappedLeft = otherBounds.left - (obj.width * obj.scaleX)
+        } else if (Math.abs(objBounds.right - otherBounds.right) < threshold) {
+          snappedLeft = otherBounds.right - (obj.width * obj.scaleX)
+        } else if (Math.abs(objBounds.centerX - otherBounds.centerX) < threshold) {
+          snappedLeft = otherBounds.centerX - (obj.width * obj.scaleX) / 2
+        }
+
+        // Top edge alignments
+        if (Math.abs(objBounds.top - otherBounds.top) < threshold) {
+          snappedTop = otherBounds.top
+        } else if (Math.abs(objBounds.top - otherBounds.bottom) < threshold) {
+          snappedTop = otherBounds.bottom
+        } else if (Math.abs(objBounds.bottom - otherBounds.top) < threshold) {
+          snappedTop = otherBounds.top - (obj.height * obj.scaleY)
+        } else if (Math.abs(objBounds.bottom - otherBounds.bottom) < threshold) {
+          snappedTop = otherBounds.bottom - (obj.height * obj.scaleY)
+        } else if (Math.abs(objBounds.centerY - otherBounds.centerY) < threshold) {
+          snappedTop = otherBounds.centerY - (obj.height * obj.scaleY) / 2
+        }
+      })
+    }
+
+    // Apply snapped positions
+    obj.set({
+      left: snappedLeft,
+      top: snappedTop
+    })
   }
 
   // Render all layers
@@ -451,7 +601,9 @@
 </script>
 
 <div class="canvas-wrapper">
+  <Rulers />
   <canvas bind:this={canvasElement}></canvas>
+  <SmartGuides />
 </div>
 
 <style>

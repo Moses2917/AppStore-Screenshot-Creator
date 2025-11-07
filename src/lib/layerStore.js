@@ -87,7 +87,27 @@ export const document = writable({
   },
   pages: [createPage()],
   currentPageIndex: 0,
-  activeToolId: Tool.SELECT
+  activeToolId: Tool.SELECT,
+  guides: {
+    horizontal: [], // Array of y positions
+    vertical: [], // Array of x positions
+    visible: true,
+    locked: false
+  },
+  grid: {
+    enabled: false,
+    size: 20, // Grid spacing in pixels
+    subdivisions: 5,
+    visible: true
+  },
+  snap: {
+    enabled: true,
+    toGuides: true,
+    toGrid: true,
+    toObjects: true,
+    toCanvas: true,
+    threshold: 10 // Snap distance in pixels
+  }
 })
 
 // Derived stores for current page
@@ -105,6 +125,9 @@ export const canvas = derived(document, $doc => $doc.canvas)
 export const activeTool = derived(document, $doc => $doc.activeToolId)
 export const pages = derived(document, $doc => $doc.pages)
 export const currentPageIndex = derived(document, $doc => $doc.currentPageIndex)
+export const guides = derived(document, $doc => $doc.guides)
+export const grid = derived(document, $doc => $doc.grid)
+export const snap = derived(document, $doc => $doc.snap)
 
 // History state for undo/redo
 export const history = writable({
@@ -427,6 +450,144 @@ export const layerActions = {
       this.saveHistory()
       return { ...$doc, pages: newPages }
     })
+  },
+
+  // Guide management
+  addHorizontalGuide(y) {
+    document.update($doc => ({
+      ...$doc,
+      guides: {
+        ...$doc.guides,
+        horizontal: [...$doc.guides.horizontal, y].sort((a, b) => a - b)
+      }
+    }))
+  },
+
+  addVerticalGuide(x) {
+    document.update($doc => ({
+      ...$doc,
+      guides: {
+        ...$doc.guides,
+        vertical: [...$doc.guides.vertical, x].sort((a, b) => a - b)
+      }
+    }))
+  },
+
+  removeHorizontalGuide(y) {
+    document.update($doc => ({
+      ...$doc,
+      guides: {
+        ...$doc.guides,
+        horizontal: $doc.guides.horizontal.filter(pos => pos !== y)
+      }
+    }))
+  },
+
+  removeVerticalGuide(x) {
+    document.update($doc => ({
+      ...$doc,
+      guides: {
+        ...$doc.guides,
+        vertical: $doc.guides.vertical.filter(pos => pos !== x)
+      }
+    }))
+  },
+
+  moveHorizontalGuide(oldY, newY) {
+    document.update($doc => ({
+      ...$doc,
+      guides: {
+        ...$doc.guides,
+        horizontal: $doc.guides.horizontal
+          .map(y => (y === oldY ? newY : y))
+          .sort((a, b) => a - b)
+      }
+    }))
+  },
+
+  moveVerticalGuide(oldX, newX) {
+    document.update($doc => ({
+      ...$doc,
+      guides: {
+        ...$doc.guides,
+        vertical: $doc.guides.vertical
+          .map(x => (x === oldX ? newX : x))
+          .sort((a, b) => a - b)
+      }
+    }))
+  },
+
+  clearAllGuides() {
+    document.update($doc => ({
+      ...$doc,
+      guides: {
+        ...$doc.guides,
+        horizontal: [],
+        vertical: []
+      }
+    }))
+  },
+
+  toggleGuidesVisible() {
+    document.update($doc => ({
+      ...$doc,
+      guides: {
+        ...$doc.guides,
+        visible: !$doc.guides.visible
+      }
+    }))
+  },
+
+  toggleGuidesLocked() {
+    document.update($doc => ({
+      ...$doc,
+      guides: {
+        ...$doc.guides,
+        locked: !$doc.guides.locked
+      }
+    }))
+  },
+
+  // Grid management
+  toggleGrid() {
+    document.update($doc => ({
+      ...$doc,
+      grid: {
+        ...$doc.grid,
+        enabled: !$doc.grid.enabled
+      }
+    }))
+  },
+
+  updateGridSettings(settings) {
+    document.update($doc => ({
+      ...$doc,
+      grid: {
+        ...$doc.grid,
+        ...settings
+      }
+    }))
+  },
+
+  // Snap management
+  toggleSnap() {
+    document.update($doc => ({
+      ...$doc,
+      snap: {
+        ...$doc.snap,
+        enabled: !$doc.snap.enabled
+      }
+    }))
+  },
+
+  updateSnapSettings(settings) {
+    document.update($doc => ({
+      ...$doc,
+      snap: {
+        ...$doc.snap,
+        ...settings
+      }
+    }))
   },
 
   // Save current state to history

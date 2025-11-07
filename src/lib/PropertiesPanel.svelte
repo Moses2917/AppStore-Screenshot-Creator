@@ -1,5 +1,6 @@
 <script>
   import { selectedLayers, layerActions, LayerType, pages, currentPageIndex } from './layerStore'
+  import AlignmentTools from './AlignmentTools.svelte'
 
   $: selectedLayer = $selectedLayers.length === 1 ? $selectedLayers[0] : null
   $: totalPages = $pages.length
@@ -84,6 +85,11 @@
 <div class="properties-panel">
   <div class="panel-header">
     <h3>Properties</h3>
+  </div>
+
+  <!-- Alignment Tools (always visible) -->
+  <div class="alignment-section">
+    <AlignmentTools />
   </div>
 
   {#if selectedLayer}
@@ -292,6 +298,11 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     opacity: 0.9;
+  }
+
+  .alignment-section {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .properties-content {

@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte'
-  import { document, layerActions, canUndo, canRedo, createLayer, LayerType, Tool, pages, currentPageIndex } from './layerStore'
+  import { document, layerActions, canUndo, canRedo, createLayer, LayerType, Tool, pages, currentPageIndex, guides, grid, snap } from './layerStore'
   import LayersPanel from './LayersPanel.svelte'
   import ToolsPanel from './ToolsPanel.svelte'
   import PropertiesPanel from './PropertiesPanel.svelte'
@@ -268,6 +268,40 @@
     </div>
 
     <div class="toolbar-section">
+      <button
+        class="toolbar-btn"
+        class:active={$guides.visible}
+        on:click={() => layerActions.toggleGuidesVisible()}
+        title="Toggle Guides"
+      >
+        📏
+      </button>
+      <button
+        class="toolbar-btn"
+        class:active={$grid.enabled}
+        on:click={() => layerActions.toggleGrid()}
+        title="Toggle Grid"
+      >
+        #
+      </button>
+      <button
+        class="toolbar-btn"
+        class:active={$snap.enabled}
+        on:click={() => layerActions.toggleSnap()}
+        title="Toggle Snapping"
+      >
+        🧲
+      </button>
+      <button
+        class="toolbar-btn"
+        on:click={() => layerActions.clearAllGuides()}
+        title="Clear All Guides"
+      >
+        🗑️ Guides
+      </button>
+    </div>
+
+    <div class="toolbar-section">
       <button class="toolbar-btn" on:click={handleZoomOut} title="Zoom Out">
         🔍-
       </button>
@@ -364,6 +398,12 @@
   .toolbar-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+  }
+
+  .toolbar-btn.active {
+    background: rgba(0, 153, 255, 0.3);
+    border-color: #0099ff;
+    box-shadow: 0 0 8px rgba(0, 153, 255, 0.3);
   }
 
   .toolbar-btn.primary {
