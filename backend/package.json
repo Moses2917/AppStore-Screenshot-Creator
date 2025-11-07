@@ -1,0 +1,58 @@
+{
+  "name": "appstore-screenshot-backend",
+  "version": "1.0.0",
+  "description": "Backend API for AppStore Screenshot Creator with image processing and cloud storage",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --coverage",
+    "worker": "node src/workers/exportWorker.js",
+    "migrate": "node src/database/migrate.js",
+    "seed": "node src/database/seed.js"
+  },
+  "keywords": [
+    "screenshot",
+    "appstore",
+    "image-processing",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.35.0",
+    "puppeteer": "^21.6.1",
+    "sharp": "^0.33.1",
+    "bull": "^4.12.0",
+    "redis": "^4.6.11",
+    "ioredis": "^5.3.2",
+    "aws-sdk": "^2.1500.0",
+    "multer": "^1.4.5-lts.1",
+    "express-validator": "^7.0.1",
+    "morgan": "^1.10.0",
+    "compression": "^1.7.4",
+    "rate-limiter-flexible": "^4.0.1",
+    "uuid": "^9.0.1",
+    "axios": "^1.6.2",
+    "archiver": "^6.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.55.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
