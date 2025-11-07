@@ -299,6 +299,7 @@
 
   function resizeDecorativeImage(id, event, corner) {
     event.preventDefault()
+    event.stopPropagation() // Prevent drag handler from triggering
     const img = config.decorativeImages?.find(i => i.id === id)
     if (!img) return
 
@@ -306,11 +307,11 @@
     const startY = event.clientY
     const startWidth = img.width
     const startHeight = img.height
-    const rect = canvasRef.getBoundingClientRect()
 
     function handleResize(e) {
-      const deltaX = ((e.clientX - startX) / rect.width) * 100
-      const deltaY = ((e.clientY - startY) / rect.height) * 100
+      // Calculate delta in pixels instead of percentages
+      const deltaX = e.clientX - startX
+      const deltaY = e.clientY - startY
 
       let newWidth = startWidth + deltaX
       let newHeight = startHeight + deltaY
