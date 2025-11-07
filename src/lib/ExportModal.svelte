@@ -7,6 +7,7 @@
 
   export let show = false
   export let isBatch = false
+  export let preselectedSize = null
 
   let selectedPreset = 'appStore'
   let selectedSize = null
@@ -14,6 +15,15 @@
   let quality = 1.0
   let customWidth = 1290
   let customHeight = 2796
+
+  // If a size was preselected from the carousel, use it
+  $: if (show && preselectedSize) {
+    customWidth = preselectedSize.width
+    customHeight = preselectedSize.height
+    if (preselectedSize.category === 'Custom') {
+      selectedPreset = 'custom'
+    }
+  }
 
   $: if (show && selectedPreset && exportPresets[selectedPreset]) {
     const sizes = Object.keys(exportPresets[selectedPreset].sizes)
@@ -234,8 +244,13 @@
   }
 
   .primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
     color: white;
+    box-shadow: 0 4px 12px rgba(0, 153, 255, 0.3);
+  }
+
+  .primary:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(0, 153, 255, 0.5);
   }
 
   .secondary {
@@ -246,9 +261,9 @@
 
   .batch-info {
     padding: 1rem;
-    background: rgba(102, 126, 234, 0.1);
+    background: rgba(0, 153, 255, 0.1);
     border-radius: 6px;
-    border-left: 3px solid #667eea;
+    border-left: 3px solid #0099ff;
     margin-top: 1rem;
   }
 
@@ -268,7 +283,7 @@
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #667eea, #764ba2);
+    background: linear-gradient(90deg, #00d4ff, #0099ff);
     transition: width 0.3s ease;
   }
 </style>

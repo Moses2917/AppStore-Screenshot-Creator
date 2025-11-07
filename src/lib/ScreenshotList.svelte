@@ -79,8 +79,8 @@
   }
 
   .screenshot-item.active {
-    border-color: #667eea;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+    border-color: #00d4ff;
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.3);
   }
 
   .screenshot-item img {

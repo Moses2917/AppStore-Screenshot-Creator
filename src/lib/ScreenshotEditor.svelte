@@ -8,6 +8,7 @@
   import TemplateSelector from './TemplateSelector.svelte'
   import ExportModal from './ExportModal.svelte'
   import KeyboardShortcuts from './KeyboardShortcuts.svelte'
+  import SizeCarousel from './SizeCarousel.svelte'
 
   let canvasRef = null
   let showExportModal = false
@@ -15,6 +16,7 @@
   let isBatchExport = false
   let projectName = ''
   let savedProjects = []
+  let selectedExportSize = null
 
   $: config = $currentScreenshot?.config || {}
   $: hasScreenshots = $screenshots.length > 0
@@ -336,7 +338,15 @@
     window.addEventListener('mousemove', handleResize)
     window.addEventListener('mouseup', stopResize)
   }
+
+  function handleSizeSelect(event) {
+    selectedExportSize = event.detail
+  }
 </script>
+
+<div class="size-carousel-section">
+  <SizeCarousel on:select={handleSizeSelect} bind:selectedSize={selectedExportSize} />
+</div>
 
 <div class="editor-container" class:no-screenshots={!hasScreenshots}>
   {#if hasScreenshots}
@@ -521,6 +531,13 @@
         </div>
 
         <div class="action-buttons">
+          {#if selectedExportSize}
+            <div class="selected-size-info">
+              <span class="size-label">Export as:</span>
+              <span class="size-value">{selectedExportSize.name}</span>
+              <span class="size-dims">{selectedExportSize.width} × {selectedExportSize.height}</span>
+            </div>
+          {/if}
           <button class="btn-primary" on:click={() => openExportModal(false)}>
             Export Current
           </button>
@@ -617,10 +634,18 @@
   </div>
 </div>
 
-<ExportModal bind:show={showExportModal} {isBatchExport} on:export={handleExport} />
+<ExportModal bind:show={showExportModal} {isBatchExport} preselectedSize={selectedExportSize} on:export={handleExport} />
 <KeyboardShortcuts bind:show={showKeyboardShortcuts} />
 
 <style>
+  .size-carousel-section {
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: rgba(0, 153, 255, 0.05);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 153, 255, 0.2);
+  }
+
   .editor-container {
     display: grid;
     grid-template-columns: 350px 1fr;
@@ -709,6 +734,39 @@
     gap: 0.5rem;
   }
 
+  .selected-size-info {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 153, 255, 0.15) 100%);
+    border: 2px solid #00d4ff;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .size-label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.7;
+    margin-bottom: 0.25rem;
+  }
+
+  .size-value {
+    display: block;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #00d4ff;
+    margin-bottom: 0.25rem;
+  }
+
+  .size-dims {
+    display: block;
+    font-size: 0.85rem;
+    font-family: 'Courier New', monospace;
+    opacity: 0.6;
+  }
+
   .action-buttons {
     display: flex;
     flex-direction: column;
@@ -734,8 +792,13 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
     color: white;
+    box-shadow: 0 4px 12px rgba(0, 153, 255, 0.3);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(0, 153, 255, 0.5);
   }
 
   .btn-secondary {
@@ -772,7 +835,7 @@
   }
 
   .project-name:hover {
-    color: #667eea;
+    color: #00d4ff;
   }
 
   .project-delete {
@@ -828,7 +891,7 @@
   }
 
   .draggable:hover {
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.5);
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.5);
     border-radius: 8px;
   }
 
@@ -869,7 +932,7 @@
     right: -8px;
     width: 20px;
     height: 20px;
-    background: #667eea;
+    background: #0099ff;
     border-radius: 50%;
     cursor: nwse-resize;
     display: flex;
@@ -1009,7 +1072,7 @@
   .empty-content h2 {
     font-size: 2.5rem;
     margin-bottom: 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
