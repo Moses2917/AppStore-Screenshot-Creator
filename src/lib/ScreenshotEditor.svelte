@@ -218,11 +218,9 @@
   }
 </script>
 
-<div class="editor-container">
-  <div class="controls">
-    {#if !hasScreenshots}
-      <FileUpload on:upload={handleUpload} />
-    {:else}
+<div class="editor-container" class:no-screenshots={!hasScreenshots}>
+  {#if hasScreenshots}
+    <div class="controls">
       <ScreenshotList onSelect={selectScreenshot} onDelete={deleteScreenshot} />
 
       {#if $currentScreenshot}
@@ -389,11 +387,11 @@
           </button>
         </div>
       {/if}
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   <div class="preview">
-    {#if $currentScreenshot}
+    {#if hasScreenshots && $currentScreenshot}
       <div class="canvas-container" bind:this={canvasRef} style={getBackgroundStyle()}>
         {#if config.textTop}
           <h2 class="text-overlay top" style={getTextStyle()}>{config.textTop}</h2>
@@ -417,9 +415,13 @@
           <h2 class="text-overlay bottom" style={getTextStyle()}>{config.textBottom}</h2>
         {/if}
       </div>
-    {:else}
+    {:else if !hasScreenshots}
       <div class="empty-state">
-        <FileUpload on:upload={handleUpload} />
+        <div class="empty-content">
+          <h2>Get Started</h2>
+          <p>Upload your screenshots to create beautiful App Store images</p>
+          <FileUpload on:upload={handleUpload} />
+        </div>
       </div>
     {/if}
   </div>
@@ -434,6 +436,10 @@
     grid-template-columns: 350px 1fr;
     gap: 2rem;
     align-items: start;
+  }
+
+  .editor-container.no-screenshots {
+    grid-template-columns: 1fr;
   }
 
   .controls {
@@ -659,7 +665,31 @@
 
   .empty-state {
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+  }
+
+  .empty-content {
     max-width: 600px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .empty-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .empty-content p {
+    font-size: 1.2rem;
+    opacity: 0.7;
+    margin-bottom: 2rem;
   }
 
   @media (max-width: 1024px) {
