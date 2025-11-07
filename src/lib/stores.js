@@ -54,12 +54,15 @@ export function createScreenshot(imageData, id = Date.now()) {
       fontFamily: 'Arial, sans-serif',
       fontWeight: 'bold',
       textShadow: false,
-      textPosition: { top: 'center', bottom: 'center' },
+      textTopPosition: { x: 50, y: 15 }, // percentage positions
+      textBottomPosition: { x: 50, y: 85 },
+      devicePosition: { x: 50, y: 50 }, // center of canvas
       rotation: 0,
       brightness: 100,
       contrast: 100,
       saturation: 100,
-      blur: 0
+      blur: 0,
+      decorativeImages: [] // array of {id, src, x, y, width, height}
     }
   }
 }
