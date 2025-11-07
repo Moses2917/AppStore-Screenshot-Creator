@@ -760,11 +760,17 @@
     box-shadow: var(--shadow-lg);
     position: sticky;
     top: 1rem;
+    min-height: 0;
   }
 
   .controls-header {
     flex-shrink: 0;
     margin-bottom: 1.5rem;
+  }
+
+  .controls :global(.tabs-container) {
+    flex: 1;
+    min-height: 0;
   }
 
   .controls-footer {
