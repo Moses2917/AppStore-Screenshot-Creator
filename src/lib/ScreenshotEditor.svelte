@@ -9,6 +9,7 @@
   import ExportModal from './ExportModal.svelte'
   import KeyboardShortcuts from './KeyboardShortcuts.svelte'
   import SizeCarousel from './SizeCarousel.svelte'
+  import EditorTabs from './EditorTabs.svelte'
 
   let canvasRef = null
   let showExportModal = false
@@ -17,6 +18,7 @@
   let projectName = ''
   let savedProjects = []
   let selectedExportSize = null
+  let activeTab = 'design'
 
   $: config = $currentScreenshot?.config || {}
   $: hasScreenshots = $screenshots.length > 0
@@ -329,186 +331,276 @@
 <div class="editor-container" class:no-screenshots={!hasScreenshots}>
   {#if hasScreenshots}
     <div class="controls">
-      <ScreenshotList onSelect={selectScreenshot} onDelete={deleteScreenshot} />
+      <div class="controls-header">
+        <ScreenshotList onSelect={selectScreenshot} onDelete={deleteScreenshot} />
+      </div>
 
       {#if $currentScreenshot}
-        <TemplateSelector on:select={selectTemplate} />
-
-        <div class="control-section">
-          <h3>Background</h3>
-
-          <div class="control-group">
-            <label>Type</label>
-            <select value={config.backgroundType} on:change={(e) => updateConfig('backgroundType', e.target.value)}>
-              <option value="solid">Solid</option>
-              <option value="gradient">Gradient</option>
-            </select>
-          </div>
-
-          {#if config.backgroundType === 'solid'}
-            <div class="control-group">
-              <label>Color</label>
-              <input type="color" value={config.backgroundColor} on:input={(e) => updateConfig('backgroundColor', e.target.value)} />
+        <EditorTabs bind:activeTab>
+          <div slot="design" class="tab-content">
+            <div class="control-section">
+              <h3>Templates</h3>
+              <TemplateSelector on:select={selectTemplate} />
             </div>
-          {:else}
-            <div class="control-group">
-              <label>Gradient Colors</label>
-              <div class="gradient-colors">
-                <input type="color" value={config.gradientColors[0]} on:input={(e) => {
-                  const colors = [...config.gradientColors]
-                  colors[0] = e.target.value
-                  updateConfig('gradientColors', colors)
-                }} />
-                <input type="color" value={config.gradientColors[1]} on:input={(e) => {
-                  const colors = [...config.gradientColors]
-                  colors[1] = e.target.value
-                  updateConfig('gradientColors', colors)
-                }} />
+
+            <div class="control-section">
+              <h3>Background</h3>
+
+              <div class="control-group">
+                <label>Type</label>
+                <select value={config.backgroundType} on:change={(e) => updateConfig('backgroundType', e.target.value)}>
+                  <option value="solid">Solid</option>
+                  <option value="gradient">Gradient</option>
+                </select>
               </div>
-            </div>
-            <div class="control-group">
-              <label>Angle ({config.gradientAngle}°)</label>
-              <input type="range" min="0" max="360" value={config.gradientAngle} on:input={(e) => updateConfig('gradientAngle', parseInt(e.target.value))} />
-            </div>
-          {/if}
-        </div>
 
-        <div class="control-section">
-          <h3>Device Frame</h3>
-          <div class="control-group">
-            <select value={config.deviceFrame} on:change={(e) => updateConfig('deviceFrame', e.target.value)}>
-              <option value="iphone">iPhone</option>
-              <option value="ipad">iPad</option>
-              <option value="none">No Frame</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="control-section">
-          <h3>Text</h3>
-
-          <div class="control-group">
-            <label>Top Text</label>
-            <input type="text" value={config.textTop} on:input={(e) => updateConfig('textTop', e.target.value)} placeholder="Enter text" />
-          </div>
-
-          <div class="control-group">
-            <label>Bottom Text</label>
-            <input type="text" value={config.textBottom} on:input={(e) => updateConfig('textBottom', e.target.value)} placeholder="Enter text" />
-          </div>
-
-          <div class="control-group">
-            <label>Font</label>
-            <select value={config.fontFamily} on:change={(e) => updateConfig('fontFamily', e.target.value)}>
-              {#each fontFamilies as font}
-                <option value={font.value}>{font.name}</option>
-              {/each}
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label>Size ({config.fontSize}px)</label>
-            <input type="range" min="16" max="72" value={config.fontSize} on:input={(e) => updateConfig('fontSize', parseInt(e.target.value))} />
-          </div>
-
-          <div class="control-group">
-            <label>Weight</label>
-            <select value={config.fontWeight} on:change={(e) => updateConfig('fontWeight', e.target.value)}>
-              <option value="normal">Normal</option>
-              <option value="bold">Bold</option>
-              <option value="900">Black</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label>Color</label>
-            <input type="color" value={config.textColor} on:input={(e) => updateConfig('textColor', e.target.value)} />
-          </div>
-
-          <div class="control-group checkbox">
-            <label>
-              <input type="checkbox" checked={config.textShadow} on:change={(e) => updateConfig('textShadow', e.target.checked)} />
-              Text Shadow
-            </label>
-          </div>
-        </div>
-
-        <div class="control-section">
-          <h3>Image Adjustments</h3>
-
-          <div class="control-group">
-            <label>Brightness ({config.brightness}%)</label>
-            <input type="range" min="0" max="200" value={config.brightness} on:input={(e) => updateConfig('brightness', parseInt(e.target.value))} />
-          </div>
-
-          <div class="control-group">
-            <label>Contrast ({config.contrast}%)</label>
-            <input type="range" min="0" max="200" value={config.contrast} on:input={(e) => updateConfig('contrast', parseInt(e.target.value))} />
-          </div>
-
-          <div class="control-group">
-            <label>Saturation ({config.saturation}%)</label>
-            <input type="range" min="0" max="200" value={config.saturation} on:input={(e) => updateConfig('saturation', parseInt(e.target.value))} />
-          </div>
-
-          <div class="control-group">
-            <label>Rotation ({config.rotation}°)</label>
-            <input type="range" min="-180" max="180" value={config.rotation} on:input={(e) => updateConfig('rotation', parseInt(e.target.value))} />
-          </div>
-        </div>
-
-        <div class="control-section">
-          <h3>Decorative Images</h3>
-          <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 1rem;">Add stickers, logos, or graphics to your screenshot</p>
-
-          <div class="control-group">
-            <label class="file-upload-label">
-              <input type="file" accept="image/*" multiple on:change={handleDecorativeImageUpload} style="display: none;" />
-              <button class="btn-secondary" on:click={(e) => e.target.previousElementSibling.click()}>
-                + Add Decorative Image
-              </button>
-            </label>
-          </div>
-
-          {#if config.decorativeImages && config.decorativeImages.length > 0}
-            <div class="decorative-images-list">
-              {#each config.decorativeImages as img, index}
-                <div class="decorative-image-item">
-                  <img src={img.src} alt="Decorative" />
-                  <div class="decorative-image-info">
-                    <span>Image {index + 1}</span>
-                    <button class="delete-btn" on:click={() => deleteDecorativeImage(img.id)}>×</button>
+              {#if config.backgroundType === 'solid'}
+                <div class="control-group">
+                  <label>Color</label>
+                  <input type="color" value={config.backgroundColor} on:input={(e) => updateConfig('backgroundColor', e.target.value)} />
+                </div>
+              {:else}
+                <div class="control-group">
+                  <label>Gradient Colors</label>
+                  <div class="gradient-colors">
+                    <input type="color" value={config.gradientColors[0]} on:input={(e) => {
+                      const colors = [...config.gradientColors]
+                      colors[0] = e.target.value
+                      updateConfig('gradientColors', colors)
+                    }} />
+                    <input type="color" value={config.gradientColors[1]} on:input={(e) => {
+                      const colors = [...config.gradientColors]
+                      colors[1] = e.target.value
+                      updateConfig('gradientColors', colors)
+                    }} />
                   </div>
                 </div>
-              {/each}
+                <div class="control-group">
+                  <label>Angle ({config.gradientAngle}°)</label>
+                  <input type="range" min="0" max="360" value={config.gradientAngle} on:input={(e) => updateConfig('gradientAngle', parseInt(e.target.value))} />
+                </div>
+              {/if}
             </div>
-          {/if}
-        </div>
 
-        <div class="control-section">
-          <h3>Projects</h3>
-
-          <div class="control-group">
-            <input type="text" bind:value={projectName} placeholder="Project name" />
+            <div class="control-section">
+              <h3>Device Frame</h3>
+              <div class="control-group">
+                <label>Frame Style</label>
+                <select value={config.deviceFrame} on:change={(e) => updateConfig('deviceFrame', e.target.value)}>
+                  <option value="iphone">iPhone</option>
+                  <option value="ipad">iPad</option>
+                  <option value="none">No Frame</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <button class="btn-secondary" on:click={handleSaveProject}>Save Project</button>
+          <div slot="text" class="tab-content">
+            <div class="control-section">
+              <h3>Text Content</h3>
 
-          {#if savedProjects.length > 0}
-            <div class="saved-projects">
-              {#each savedProjects as project}
-                <div class="project-item">
-                  <button class="project-name" on:click={() => handleLoadProject(project)}>
-                    {project}
-                  </button>
-                  <button class="project-delete" on:click={() => handleDeleteProject(project)}>×</button>
-                </div>
-              {/each}
+              <div class="control-group">
+                <label>Top Text</label>
+                <input type="text" value={config.textTop} on:input={(e) => updateConfig('textTop', e.target.value)} placeholder="Enter top text" />
+              </div>
+
+              <div class="control-group">
+                <label>Bottom Text</label>
+                <input type="text" value={config.textBottom} on:input={(e) => updateConfig('textBottom', e.target.value)} placeholder="Enter bottom text" />
+              </div>
             </div>
-          {/if}
-        </div>
 
-        <div class="action-buttons">
+            <div class="control-section">
+              <h3>Typography</h3>
+
+              <div class="control-group">
+                <label>Font Family</label>
+                <select value={config.fontFamily} on:change={(e) => updateConfig('fontFamily', e.target.value)}>
+                  {#each fontFamilies as font}
+                    <option value={font.value}>{font.name}</option>
+                  {/each}
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label>Font Size ({config.fontSize}px)</label>
+                <input type="range" min="16" max="72" value={config.fontSize} on:input={(e) => updateConfig('fontSize', parseInt(e.target.value))} />
+              </div>
+
+              <div class="control-group">
+                <label>Font Weight</label>
+                <select value={config.fontWeight} on:change={(e) => updateConfig('fontWeight', e.target.value)}>
+                  <option value="normal">Normal</option>
+                  <option value="bold">Bold</option>
+                  <option value="900">Black</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="control-section">
+              <h3>Text Styling</h3>
+
+              <div class="control-group">
+                <label>Text Color</label>
+                <input type="color" value={config.textColor} on:input={(e) => updateConfig('textColor', e.target.value)} />
+              </div>
+
+              <div class="control-group checkbox">
+                <label>
+                  <input type="checkbox" checked={config.textShadow} on:change={(e) => updateConfig('textShadow', e.target.checked)} />
+                  Enable Text Shadow
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div slot="effects" class="tab-content">
+            <div class="control-section">
+              <h3>Color Adjustments</h3>
+
+              <div class="control-group">
+                <label>Brightness ({config.brightness}%)</label>
+                <input type="range" min="0" max="200" value={config.brightness} on:input={(e) => updateConfig('brightness', parseInt(e.target.value))} />
+              </div>
+
+              <div class="control-group">
+                <label>Contrast ({config.contrast}%)</label>
+                <input type="range" min="0" max="200" value={config.contrast} on:input={(e) => updateConfig('contrast', parseInt(e.target.value))} />
+              </div>
+
+              <div class="control-group">
+                <label>Saturation ({config.saturation}%)</label>
+                <input type="range" min="0" max="200" value={config.saturation} on:input={(e) => updateConfig('saturation', parseInt(e.target.value))} />
+              </div>
+            </div>
+
+            <div class="control-section">
+              <h3>Transform</h3>
+
+              <div class="control-group">
+                <label>Rotation ({config.rotation}°)</label>
+                <input type="range" min="-180" max="180" value={config.rotation} on:input={(e) => updateConfig('rotation', parseInt(e.target.value))} />
+              </div>
+            </div>
+
+            <div class="effect-presets">
+              <h3>Quick Presets</h3>
+              <div class="preset-grid">
+                <button class="preset-btn" on:click={() => {
+                  updateConfig('brightness', 100)
+                  updateConfig('contrast', 100)
+                  updateConfig('saturation', 100)
+                  updateConfig('rotation', 0)
+                }}>
+                  Reset All
+                </button>
+                <button class="preset-btn" on:click={() => {
+                  updateConfig('brightness', 120)
+                  updateConfig('contrast', 110)
+                  updateConfig('saturation', 90)
+                }}>
+                  Vibrant
+                </button>
+                <button class="preset-btn" on:click={() => {
+                  updateConfig('brightness', 95)
+                  updateConfig('contrast', 115)
+                  updateConfig('saturation', 80)
+                }}>
+                  Dramatic
+                </button>
+                <button class="preset-btn" on:click={() => {
+                  updateConfig('saturation', 0)
+                }}>
+                  B&W
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div slot="decorations" class="tab-content">
+            <div class="control-section">
+              <h3>Add Decorations</h3>
+              <p class="section-description">Enhance your screenshot with stickers, logos, or custom graphics</p>
+
+              <div class="control-group">
+                <label class="file-upload-label">
+                  <input type="file" accept="image/*" multiple on:change={handleDecorativeImageUpload} style="display: none;" />
+                  <button class="btn-upload" on:click={(e) => e.target.previousElementSibling.click()}>
+                    <span class="upload-icon">📤</span>
+                    <span>Upload Decorative Image</span>
+                  </button>
+                </label>
+              </div>
+            </div>
+
+            {#if config.decorativeImages && config.decorativeImages.length > 0}
+              <div class="control-section">
+                <h3>Manage Decorations ({config.decorativeImages.length})</h3>
+                <div class="decorative-images-list">
+                  {#each config.decorativeImages as img, index}
+                    <div class="decorative-image-item">
+                      <img src={img.src} alt="Decorative" />
+                      <div class="decorative-image-info">
+                        <div class="image-details">
+                          <span class="image-label">Image {index + 1}</span>
+                          <span class="image-size">{img.width}×{img.height}px</span>
+                        </div>
+                        <button class="delete-btn" on:click={() => deleteDecorativeImage(img.id)}>×</button>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {:else}
+              <div class="empty-decorations">
+                <div class="empty-icon">🖼️</div>
+                <p>No decorations added yet</p>
+                <p class="empty-hint">Upload images to add decorative elements to your screenshot</p>
+              </div>
+            {/if}
+          </div>
+
+          <div slot="projects" class="tab-content">
+            <div class="control-section">
+              <h3>Save Project</h3>
+
+              <div class="control-group">
+                <label>Project Name</label>
+                <input type="text" bind:value={projectName} placeholder="Enter project name" />
+              </div>
+
+              <button class="btn-save-project" on:click={handleSaveProject}>
+                <span class="save-icon">💾</span>
+                Save Current Project
+              </button>
+            </div>
+
+            {#if savedProjects.length > 0}
+              <div class="control-section">
+                <h3>Saved Projects ({savedProjects.length})</h3>
+                <div class="saved-projects">
+                  {#each savedProjects as project}
+                    <div class="project-item">
+                      <button class="project-name" on:click={() => handleLoadProject(project)}>
+                        <span class="project-icon">📁</span>
+                        <span class="project-text">{project}</span>
+                      </button>
+                      <button class="project-delete" on:click={() => handleDeleteProject(project)}>×</button>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {:else}
+              <div class="empty-projects">
+                <div class="empty-icon">💾</div>
+                <p>No saved projects</p>
+                <p class="empty-hint">Save your work to reload it later</p>
+              </div>
+            {/if}
+          </div>
+        </EditorTabs>
+
+        <div class="controls-footer">
           {#if selectedExportSize}
             <div class="selected-size-info">
               <span class="size-label">Export as:</span>
@@ -516,18 +608,24 @@
               <span class="size-dims">{selectedExportSize.width} × {selectedExportSize.height}</span>
             </div>
           {/if}
-          <button class="btn-primary" on:click={() => openExportModal(false)}>
-            Export Current
-          </button>
-          <button class="btn-primary" on:click={() => openExportModal(true)}>
-            Batch Export All
-          </button>
-          <button class="btn-secondary" on:click={duplicateScreenshot}>
-            Duplicate
-          </button>
-          <button class="btn-secondary" on:click={() => showKeyboardShortcuts = true}>
-            Shortcuts (?)
-          </button>
+          <div class="action-buttons">
+            <button class="btn-primary" on:click={() => openExportModal(false)}>
+              <span class="btn-icon">📸</span>
+              Export Current
+            </button>
+            <button class="btn-primary" on:click={() => openExportModal(true)}>
+              <span class="btn-icon">📦</span>
+              Batch Export All
+            </button>
+            <button class="btn-secondary" on:click={duplicateScreenshot}>
+              <span class="btn-icon">📋</span>
+              Duplicate
+            </button>
+            <button class="btn-secondary" on:click={() => showKeyboardShortcuts = true}>
+              <span class="btn-icon">⌨️</span>
+              Shortcuts
+            </button>
+          </div>
         </div>
       {/if}
     </div>
@@ -646,10 +744,28 @@
     border-radius: 20px;
     border: 1px solid var(--glass-border);
     max-height: 90vh;
-    overflow-y: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     box-shadow: var(--shadow-lg);
     position: sticky;
     top: 1rem;
+  }
+
+  .controls-header {
+    flex-shrink: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .controls-footer {
+    flex-shrink: 0;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .tab-content {
+    animation: fadeIn 0.3s ease;
   }
 
   .control-section {
@@ -809,12 +925,22 @@
     opacity: 0.6;
   }
 
+  .section-description {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
   .action-buttons {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    margin-top: 2rem;
     animation: slideIn 0.5s ease;
+  }
+
+  .btn-icon {
+    margin-right: 0.5rem;
   }
 
   .btn-primary,
@@ -880,6 +1006,36 @@
     box-shadow: var(--shadow-md);
   }
 
+  .btn-upload,
+  .btn-save-project {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    border: 2px dashed var(--glass-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: inherit;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .btn-upload:hover,
+  .btn-save-project:hover {
+    border-color: var(--primary-color);
+    background: rgba(0, 153, 255, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .upload-icon,
+  .save-icon {
+    font-size: 1.2rem;
+  }
+
   .saved-projects {
     margin-top: 1rem;
     max-height: 150px;
@@ -890,10 +1046,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem;
+    padding: 0.75rem;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
+    border-radius: 8px;
     margin-bottom: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all var(--transition-normal);
+  }
+
+  .project-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(0, 153, 255, 0.3);
   }
 
   .project-name {
@@ -905,10 +1068,21 @@
     cursor: pointer;
     padding: 0;
     font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .project-name:hover {
     color: #00d4ff;
+  }
+
+  .project-icon {
+    font-size: 1.1rem;
+  }
+
+  .project-text {
+    flex: 1;
   }
 
   .project-delete {
@@ -1068,18 +1242,95 @@
     background: rgba(255, 0, 0, 1);
   }
 
+  .effect-presets {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .effect-presets h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 1rem;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: var(--primary-color);
+  }
+
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .preset-btn {
+    padding: 0.75rem;
+    background: rgba(0, 153, 255, 0.1);
+    border: 1px solid rgba(0, 153, 255, 0.3);
+    border-radius: 8px;
+    color: #00d4ff;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .preset-btn:hover {
+    background: rgba(0, 153, 255, 0.2);
+    border-color: #00d4ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+  }
+
+  .empty-decorations,
+  .empty-projects {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    margin-top: 1.5rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .empty-decorations p,
+  .empty-projects p {
+    font-size: 0.95rem;
+    opacity: 0.7;
+    margin: 0.5rem 0;
+  }
+
+  .empty-hint {
+    font-size: 0.85rem !important;
+    opacity: 0.5 !important;
+  }
+
   .decorative-images-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
+    gap: 0.75rem;
     margin-top: 1rem;
   }
 
   .decorative-image-item {
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
+    border-radius: 8px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all var(--transition-normal);
+  }
+
+  .decorative-image-item:hover {
+    border-color: rgba(0, 153, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
   }
 
   .decorative-image-item img {
@@ -1090,11 +1341,28 @@
   }
 
   .decorative-image-info {
-    padding: 0.5rem;
+    padding: 0.75rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 0.8rem;
+  }
+
+  .image-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+  }
+
+  .image-label {
+    font-weight: 600;
+  }
+
+  .image-size {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    font-family: 'Courier New', monospace;
   }
 
   .decorative-image-info .delete-btn {
