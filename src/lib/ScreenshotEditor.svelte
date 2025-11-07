@@ -220,13 +220,12 @@
   // Drag and drop functionality
   let draggedElement = null
   let dragOffset = { x: 0, y: 0 }
-  let canvasContainer = null
 
   function startDrag(element, event) {
     event.preventDefault()
     draggedElement = element
 
-    const rect = canvasContainer.getBoundingClientRect()
+    const rect = canvasRef.getBoundingClientRect()
     const elementRect = event.target.getBoundingClientRect()
 
     // Calculate offset from element center
@@ -238,9 +237,9 @@
   }
 
   function handleDrag(event) {
-    if (!draggedElement || !canvasContainer) return
+    if (!draggedElement || !canvasRef) return
 
-    const rect = canvasContainer.getBoundingClientRect()
+    const rect = canvasRef.getBoundingClientRect()
     const x = ((event.clientX - rect.left - dragOffset.x) / rect.width) * 100
     const y = ((event.clientY - rect.top - dragOffset.y) / rect.height) * 100
 
@@ -307,7 +306,7 @@
     const startY = event.clientY
     const startWidth = img.width
     const startHeight = img.height
-    const rect = canvasContainer.getBoundingClientRect()
+    const rect = canvasRef.getBoundingClientRect()
 
     function handleResize(e) {
       const deltaX = ((e.clientX - startX) / rect.width) * 100
@@ -540,7 +539,7 @@
 
   <div class="preview">
     {#if hasScreenshots && $currentScreenshot}
-      <div class="canvas-container" bind:this={canvasRef} bind:this={canvasContainer} style={getBackgroundStyle()}>
+      <div class="canvas-container" bind:this={canvasRef} style={getBackgroundStyle()}>
         {#if config.textTop}
           <div
             class="text-overlay draggable"
