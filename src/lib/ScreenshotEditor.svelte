@@ -199,13 +199,18 @@
     }
   }
 
-  // Drag and drop functionality
+  // Drag and drop functionality with performance optimization
   let draggedElement = null
   let dragOffset = { x: 0, y: 0 }
+  let dragStartPosition = { x: 0, y: 0 }
+  let currentDragElement = null
+  let lastFrameTime = 0
+  const FRAME_DELAY = 1000 / 60 // 60fps throttle
 
   function startDrag(element, event) {
     event.preventDefault()
     draggedElement = element
+    currentDragElement = event.currentTarget
 
     const rect = canvasRef.getBoundingClientRect()
     const elementRect = event.target.getBoundingClientRect()
@@ -214,12 +219,29 @@
     dragOffset.x = event.clientX - elementRect.left - elementRect.width / 2
     dragOffset.y = event.clientY - elementRect.top - elementRect.height / 2
 
+    // Store initial position
+    if (element.type === 'textTop') {
+      dragStartPosition = { ...config.textTopPosition } || { x: 50, y: 15 }
+    } else if (element.type === 'textBottom') {
+      dragStartPosition = { ...config.textBottomPosition } || { x: 50, y: 85 }
+    } else if (element.type === 'device') {
+      dragStartPosition = { ...config.devicePosition } || { x: 50, y: 50 }
+    } else if (element.type === 'decorativeImage') {
+      const img = config.decorativeImages?.find(i => i.id === element.id)
+      dragStartPosition = img ? { x: img.x, y: img.y } : { x: 50, y: 50 }
+    }
+
     window.addEventListener('mousemove', handleDrag)
     window.addEventListener('mouseup', stopDrag)
   }
 
   function handleDrag(event) {
-    if (!draggedElement || !canvasRef) return
+    if (!draggedElement || !canvasRef || !currentDragElement) return
+
+    // Throttle to 60fps
+    const now = Date.now()
+    if (now - lastFrameTime < FRAME_DELAY) return
+    lastFrameTime = now
 
     const rect = canvasRef.getBoundingClientRect()
     const x = ((event.clientX - rect.left - dragOffset.x) / rect.width) * 100
@@ -229,19 +251,37 @@
     const clampedX = Math.max(0, Math.min(100, x))
     const clampedY = Math.max(0, Math.min(100, y))
 
-    if (draggedElement.type === 'textTop') {
-      updateConfig('textTopPosition', { x: clampedX, y: clampedY })
-    } else if (draggedElement.type === 'textBottom') {
-      updateConfig('textBottomPosition', { x: clampedX, y: clampedY })
-    } else if (draggedElement.type === 'device') {
-      updateConfig('devicePosition', { x: clampedX, y: clampedY })
-    } else if (draggedElement.type === 'decorativeImage') {
-      updateDecorativeImage(draggedElement.id, { x: clampedX, y: clampedY })
-    }
+    // Apply visual update directly via CSS (no store update)
+    currentDragElement.style.left = `${clampedX}%`
+    currentDragElement.style.top = `${clampedY}%`
   }
 
   function stopDrag() {
+    if (!draggedElement || !canvasRef || !currentDragElement) {
+      draggedElement = null
+      currentDragElement = null
+      window.removeEventListener('mousemove', handleDrag)
+      window.removeEventListener('mouseup', stopDrag)
+      return
+    }
+
+    // Get final position from element style
+    const finalX = parseFloat(currentDragElement.style.left) || dragStartPosition.x
+    const finalY = parseFloat(currentDragElement.style.top) || dragStartPosition.y
+
+    // Only update store once at the end
+    if (draggedElement.type === 'textTop') {
+      updateConfig('textTopPosition', { x: finalX, y: finalY })
+    } else if (draggedElement.type === 'textBottom') {
+      updateConfig('textBottomPosition', { x: finalX, y: finalY })
+    } else if (draggedElement.type === 'device') {
+      updateConfig('devicePosition', { x: finalX, y: finalY })
+    } else if (draggedElement.type === 'decorativeImage') {
+      updateDecorativeImage(draggedElement.id, { x: finalX, y: finalY })
+    }
+
     draggedElement = null
+    currentDragElement = null
     window.removeEventListener('mousemove', handleDrag)
     window.removeEventListener('mouseup', stopDrag)
   }
@@ -289,8 +329,16 @@
     const startY = event.clientY
     const startWidth = img.width
     const startHeight = img.height
+    const resizeElement = event.currentTarget.parentElement.querySelector('img')
+    let lastResizeTime = 0
+    const RESIZE_FRAME_DELAY = 1000 / 60 // 60fps throttle
 
     function handleResize(e) {
+      // Throttle to 60fps
+      const now = Date.now()
+      if (now - lastResizeTime < RESIZE_FRAME_DELAY) return
+      lastResizeTime = now
+
       // Calculate delta in pixels instead of percentages
       const deltaX = e.clientX - startX
       const deltaY = e.clientY - startY
@@ -304,13 +352,23 @@
         newHeight = newWidth / aspectRatio
       }
 
-      updateDecorativeImage(id, {
-        width: Math.max(50, newWidth),
-        height: Math.max(50, newHeight)
-      })
+      // Apply visual update directly via CSS (no store update)
+      const clampedWidth = Math.max(50, newWidth)
+      const clampedHeight = Math.max(50, newHeight)
+      resizeElement.style.width = `${clampedWidth}px`
+      resizeElement.style.height = `${clampedHeight}px`
     }
 
     function stopResize() {
+      // Update store only once at the end
+      const finalWidth = parseFloat(resizeElement.style.width) || startWidth
+      const finalHeight = parseFloat(resizeElement.style.height) || startHeight
+
+      updateDecorativeImage(id, {
+        width: Math.max(50, finalWidth),
+        height: Math.max(50, finalHeight)
+      })
+
       window.removeEventListener('mousemove', handleResize)
       window.removeEventListener('mouseup', stopResize)
     }
