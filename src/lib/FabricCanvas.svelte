@@ -136,6 +136,9 @@
       case LayerType.SHAPE:
         renderShapeLayer(layer)
         break
+      case LayerType.DEVICE_FRAME:
+        renderDeviceFrameLayer(layer)
+        break
     }
   }
 
@@ -216,6 +219,97 @@
       fabricCanvas.add(shape)
       layerObjects.set(layer.id, shape)
     }
+  }
+
+  function renderDeviceFrameLayer(layer) {
+    if (!layer.data.deviceConfig) return
+
+    const device = layer.data.deviceConfig
+    const group = new fabric.Group([], {
+      left: layer.position.x,
+      top: layer.position.y,
+      scaleX: layer.scale.x,
+      scaleY: layer.scale.y,
+      angle: layer.rotation
+    })
+
+    // Create device frame (rounded rectangle)
+    const frame = new fabric.Rect({
+      width: device.frameSize.width,
+      height: device.frameSize.height,
+      fill: device.color,
+      rx: device.cornerRadius,
+      ry: device.cornerRadius,
+      shadow: new fabric.Shadow({
+        color: 'rgba(0, 0, 0, 0.5)',
+        blur: 40,
+        offsetX: 0,
+        offsetY: 20
+      })
+    })
+    group.addWithUpdate(frame)
+
+    // Create screen area (where content goes)
+    const screen = new fabric.Rect({
+      width: device.screenSize.width,
+      height: device.screenSize.height,
+      fill: '#f5f5f5',
+      left: device.screenOffset.x,
+      top: device.screenOffset.y,
+      rx: device.cornerRadius - 5,
+      ry: device.cornerRadius - 5
+    })
+    group.addWithUpdate(screen)
+
+    // Add dynamic island if device has it
+    if (device.hasDynamicIsland) {
+      const island = new fabric.Rect({
+        width: 120,
+        height: 30,
+        fill: '#000',
+        left: device.frameSize.width / 2 - 60,
+        top: device.screenOffset.y + 20,
+        rx: 15,
+        ry: 15
+      })
+      group.addWithUpdate(island)
+    }
+
+    // Add notch if device has it
+    if (device.hasNotch && !device.hasDynamicIsland) {
+      const notch = new fabric.Rect({
+        width: 160,
+        height: 30,
+        fill: '#000',
+        left: device.frameSize.width / 2 - 80,
+        top: device.screenOffset.y,
+        rx: 0,
+        ry: 15
+      })
+      group.addWithUpdate(notch)
+    }
+
+    // Add home button if device has it
+    if (device.hasHomeButton) {
+      const homeButton = new fabric.Circle({
+        radius: 28,
+        fill: 'transparent',
+        stroke: device.color,
+        strokeWidth: 2,
+        left: device.frameSize.width / 2 - 28,
+        top: device.frameSize.height - device.screenOffset.y - 56
+      })
+      group.addWithUpdate(homeButton)
+    }
+
+    group.layerId = layer.id
+    group.opacity = layer.opacity
+    group.globalCompositeOperation = layer.blendMode
+    group.selectable = !layer.locked
+    group.evented = !layer.locked
+
+    fabricCanvas.add(group)
+    layerObjects.set(layer.id, group)
   }
 
   function configureObject(obj, layer) {

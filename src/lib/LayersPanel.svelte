@@ -38,6 +38,7 @@
       [LayerType.IMAGE]: '🖼️',
       [LayerType.TEXT]: 'T',
       [LayerType.SHAPE]: '□',
+      [LayerType.DEVICE_FRAME]: '📱',
       [LayerType.ADJUSTMENT]: '🎨',
       [LayerType.GROUP]: '📁'
     }

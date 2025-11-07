@@ -7,10 +7,12 @@
   import FabricCanvas from './FabricCanvas.svelte'
   import AppStoreSizeSelector from './AppStoreSizeSelector.svelte'
   import PageNavigator from './PageNavigator.svelte'
+  import DeviceFrameSelector from './DeviceFrameSelector.svelte'
 
   let fabricCanvas
   let fileInput
   let showSizeSelector = true
+  let showDeviceFrameSelector = false
 
   function handleSizeSelect(event) {
     const size = event.detail
@@ -176,10 +178,29 @@
   function triggerFileUpload() {
     fileInput.click()
   }
+
+  function handleDeviceFrameSelect(event) {
+    const device = event.detail
+
+    // Create a device frame layer
+    const frameLayer = createLayer(LayerType.DEVICE_FRAME, {
+      name: device.name,
+      position: { x: 100, y: 100 },
+      layerData: {
+        deviceConfig: device
+      }
+    })
+
+    layerActions.addLayer(frameLayer)
+    showDeviceFrameSelector = false
+  }
 </script>
 
 <!-- App Store Size Selector Modal -->
 <AppStoreSizeSelector bind:show={showSizeSelector} on:select={handleSizeSelect} />
+
+<!-- Device Frame Selector Modal -->
+<DeviceFrameSelector bind:show={showDeviceFrameSelector} on:select={handleDeviceFrameSelect} />
 
 <div class="layer-editor">
   <!-- Page Navigator -->
@@ -221,6 +242,10 @@
           <button on:click={() => addShapeLayer('circle')}>Circle</button>
         </div>
       </div>
+
+      <button class="toolbar-btn" on:click={() => showDeviceFrameSelector = true} title="Add Device Frame">
+        📱 Device
+      </button>
     </div>
 
     <div class="toolbar-section">

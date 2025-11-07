@@ -5,6 +5,7 @@ export const LayerType = {
   IMAGE: 'image',
   TEXT: 'text',
   SHAPE: 'shape',
+  DEVICE_FRAME: 'device_frame',
   ADJUSTMENT: 'adjustment',
   GROUP: 'group'
 }
