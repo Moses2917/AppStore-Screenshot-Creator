@@ -1,0 +1,19 @@
+{
+  "name": "appstore-screenshot-creator",
+  "version": "1.0.0",
+  "description": "Upload your iOS app screenshot, edit them into nice images for the App Store",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.0.1",
+    "svelte": "^4.2.8",
+    "vite": "^5.0.11"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1"
+  }
+}
