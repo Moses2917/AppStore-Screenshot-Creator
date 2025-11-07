@@ -143,6 +143,29 @@
     if (!layer.data.imageUrl) return
 
     fabric.Image.fromURL(layer.data.imageUrl, (img) => {
+      // If image has default position (0,0) and default scale (1,1), center it and scale to fit
+      const isDefaultPosition = layer.position.x === 0 && layer.position.y === 0
+      const isDefaultScale = layer.scale.x === 1 && layer.scale.y === 1
+
+      if (isDefaultPosition && isDefaultScale) {
+        // Scale image to fit within canvas (max 80% of canvas dimensions)
+        const maxWidth = $canvas.width * 0.8
+        const maxHeight = $canvas.height * 0.8
+        const scaleX = maxWidth / img.width
+        const scaleY = maxHeight / img.height
+        const scale = Math.min(scaleX, scaleY, 1) // Don't upscale
+
+        // Center the image
+        const left = ($canvas.width - img.width * scale) / 2
+        const top = ($canvas.height - img.height * scale) / 2
+
+        // Update layer position and scale
+        layer.position.x = left
+        layer.position.y = top
+        layer.scale.x = scale
+        layer.scale.y = scale
+      }
+
       configureObject(img, layer)
       applyFilters(img, layer.filters)
 
@@ -236,7 +259,11 @@
   }
 
   // Update canvas when layers change or page changes
-  $: if (fabricCanvas && ($layers || $pages || $currentPageIndex !== undefined)) {
+  $: if (fabricCanvas) {
+    // Reference all dependencies to trigger reactivity
+    $layers
+    $pages
+    $currentPageIndex
     renderAllLayers()
   }
 
