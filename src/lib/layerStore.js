@@ -61,11 +61,21 @@ export function createLayer(type, data = {}) {
     scale: data.scale || { x: 1, y: 1 },
     rotation: data.rotation || 0,
     filters: data.filters || [],
-    data: data.layerData || {}
+    data: data.layerData || {},
+    spanPages: data.spanPages || null // null means only current page, or array of page indices
   }
 }
 
-// Document state
+// Create a new page
+export function createPage() {
+  return {
+    id: `page_${Date.now()}_${Math.random()}`,
+    layers: [],
+    selectedLayerIds: []
+  }
+}
+
+// Document state with multi-page support
 export const document = writable({
   canvas: {
     width: 1242,
@@ -74,19 +84,26 @@ export const document = writable({
     zoom: 1,
     pan: { x: 0, y: 0 }
   },
-  layers: [],
-  selectedLayerIds: [],
+  pages: [createPage()],
+  currentPageIndex: 0,
   activeToolId: Tool.SELECT
 })
 
-// Derived stores
-export const layers = derived(document, $doc => $doc.layers)
-export const selectedLayerIds = derived(document, $doc => $doc.selectedLayerIds)
-export const selectedLayers = derived(document, $doc =>
-  $doc.layers.filter(layer => $doc.selectedLayerIds.includes(layer.id))
+// Derived stores for current page
+export const currentPage = derived(document, $doc =>
+  $doc.pages[$doc.currentPageIndex] || $doc.pages[0]
+)
+
+export const layers = derived(currentPage, $page => $page?.layers || [])
+export const selectedLayerIds = derived(currentPage, $page => $page?.selectedLayerIds || [])
+export const selectedLayers = derived(
+  [currentPage],
+  ([$page]) => $page?.layers.filter(layer => $page.selectedLayerIds.includes(layer.id)) || []
 )
 export const canvas = derived(document, $doc => $doc.canvas)
 export const activeTool = derived(document, $doc => $doc.activeToolId)
+export const pages = derived(document, $doc => $doc.pages)
+export const currentPageIndex = derived(document, $doc => $doc.currentPageIndex)
 
 // History state for undo/redo
 export const history = writable({
@@ -100,60 +117,83 @@ export const canRedo = derived(history, $history => $history.future.length > 0)
 
 // Layer management functions
 export const layerActions = {
-  // Add a new layer
+  // Add a new layer to current page
   addLayer(layer, index = -1) {
     document.update($doc => {
-      const newLayers = [...$doc.layers]
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const newLayers = [...currentPage.layers]
+
       if (index === -1) {
         newLayers.push(layer)
       } else {
         newLayers.splice(index, 0, layer)
       }
 
-      this.saveHistory()
-
-      return {
-        ...$doc,
+      newPages[$doc.currentPageIndex] = {
+        ...currentPage,
         layers: newLayers,
         selectedLayerIds: [layer.id]
       }
-    })
-  },
-
-  // Remove layer(s)
-  removeLayer(layerId) {
-    document.update($doc => {
-      const newLayers = $doc.layers.filter(l => l.id !== layerId)
-      const newSelectedIds = $doc.selectedLayerIds.filter(id => id !== layerId)
 
       this.saveHistory()
 
       return {
         ...$doc,
+        pages: newPages
+      }
+    })
+  },
+
+  // Remove layer(s) from current page
+  removeLayer(layerId) {
+    document.update($doc => {
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const newLayers = currentPage.layers.filter(l => l.id !== layerId)
+      const newSelectedIds = currentPage.selectedLayerIds.filter(id => id !== layerId)
+
+      newPages[$doc.currentPageIndex] = {
+        ...currentPage,
         layers: newLayers,
         selectedLayerIds: newSelectedIds
       }
-    })
-  },
 
-  // Update layer properties
-  updateLayer(layerId, updates) {
-    document.update($doc => {
-      const newLayers = $doc.layers.map(layer =>
-        layer.id === layerId ? { ...layer, ...updates } : layer
-      )
+      this.saveHistory()
 
       return {
         ...$doc,
-        layers: newLayers
+        pages: newPages
       }
     })
   },
 
-  // Duplicate layer
+  // Update layer properties on current page
+  updateLayer(layerId, updates) {
+    document.update($doc => {
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const newLayers = currentPage.layers.map(layer =>
+        layer.id === layerId ? { ...layer, ...updates } : layer
+      )
+
+      newPages[$doc.currentPageIndex] = {
+        ...currentPage,
+        layers: newLayers
+      }
+
+      return {
+        ...$doc,
+        pages: newPages
+      }
+    })
+  },
+
+  // Duplicate layer on current page
   duplicateLayer(layerId) {
     const $doc = get(document)
-    const layer = $doc.layers.find(l => l.id === layerId)
+    const currentPage = $doc.pages[$doc.currentPageIndex]
+    const layer = currentPage.layers.find(l => l.id === layerId)
     if (!layer) return
 
     const duplicate = {
@@ -166,131 +206,196 @@ export const layerActions = {
       }
     }
 
-    const index = $doc.layers.findIndex(l => l.id === layerId)
+    const index = currentPage.layers.findIndex(l => l.id === layerId)
     this.addLayer(duplicate, index + 1)
   },
 
-  // Move layer up in z-index
+  // Move layer up in z-index on current page
   moveLayerUp(layerId) {
     document.update($doc => {
-      const index = $doc.layers.findIndex(l => l.id === layerId)
-      if (index === $doc.layers.length - 1) return $doc // Already at top
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const index = currentPage.layers.findIndex(l => l.id === layerId)
+      if (index === currentPage.layers.length - 1) return $doc
 
-      const newLayers = [...$doc.layers]
+      const newLayers = [...currentPage.layers]
       const [layer] = newLayers.splice(index, 1)
       newLayers.splice(index + 1, 0, layer)
 
+      newPages[$doc.currentPageIndex] = { ...currentPage, layers: newLayers }
       this.saveHistory()
 
-      return { ...$doc, layers: newLayers }
+      return { ...$doc, pages: newPages }
     })
   },
 
-  // Move layer down in z-index
+  // Move layer down in z-index on current page
   moveLayerDown(layerId) {
     document.update($doc => {
-      const index = $doc.layers.findIndex(l => l.id === layerId)
-      if (index === 0) return $doc // Already at bottom
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const index = currentPage.layers.findIndex(l => l.id === layerId)
+      if (index === 0) return $doc
 
-      const newLayers = [...$doc.layers]
+      const newLayers = [...currentPage.layers]
       const [layer] = newLayers.splice(index, 1)
       newLayers.splice(index - 1, 0, layer)
 
+      newPages[$doc.currentPageIndex] = { ...currentPage, layers: newLayers }
       this.saveHistory()
 
-      return { ...$doc, layers: newLayers }
+      return { ...$doc, pages: newPages }
     })
   },
 
-  // Move layer to top
+  // Move layer to top on current page
   moveLayerToTop(layerId) {
     document.update($doc => {
-      const index = $doc.layers.findIndex(l => l.id === layerId)
-      if (index === $doc.layers.length - 1) return $doc
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const index = currentPage.layers.findIndex(l => l.id === layerId)
+      if (index === currentPage.layers.length - 1) return $doc
 
-      const newLayers = [...$doc.layers]
+      const newLayers = [...currentPage.layers]
       const [layer] = newLayers.splice(index, 1)
       newLayers.push(layer)
 
+      newPages[$doc.currentPageIndex] = { ...currentPage, layers: newLayers }
       this.saveHistory()
 
-      return { ...$doc, layers: newLayers }
+      return { ...$doc, pages: newPages }
     })
   },
 
-  // Move layer to bottom
+  // Move layer to bottom on current page
   moveLayerToBottom(layerId) {
     document.update($doc => {
-      const index = $doc.layers.findIndex(l => l.id === layerId)
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const index = currentPage.layers.findIndex(l => l.id === layerId)
       if (index === 0) return $doc
 
-      const newLayers = [...$doc.layers]
+      const newLayers = [...currentPage.layers]
       const [layer] = newLayers.splice(index, 1)
       newLayers.unshift(layer)
 
+      newPages[$doc.currentPageIndex] = { ...currentPage, layers: newLayers }
       this.saveHistory()
 
-      return { ...$doc, layers: newLayers }
+      return { ...$doc, pages: newPages }
     })
   },
 
-  // Toggle layer visibility
+  // Toggle layer visibility on current page
   toggleVisibility(layerId) {
     document.update($doc => {
-      const newLayers = $doc.layers.map(layer =>
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const newLayers = currentPage.layers.map(layer =>
         layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
       )
-      return { ...$doc, layers: newLayers }
+      newPages[$doc.currentPageIndex] = { ...currentPage, layers: newLayers }
+      return { ...$doc, pages: newPages }
     })
   },
 
-  // Toggle layer lock
+  // Toggle layer lock on current page
   toggleLock(layerId) {
     document.update($doc => {
-      const newLayers = $doc.layers.map(layer =>
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const newLayers = currentPage.layers.map(layer =>
         layer.id === layerId ? { ...layer, locked: !layer.locked } : layer
       )
-      return { ...$doc, layers: newLayers }
+      newPages[$doc.currentPageIndex] = { ...currentPage, layers: newLayers }
+      return { ...$doc, pages: newPages }
     })
   },
 
-  // Select layer(s)
+  // Select layer(s) on current page
   selectLayer(layerId, addToSelection = false) {
     document.update($doc => {
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+
       let newSelectedIds
       if (addToSelection) {
-        if ($doc.selectedLayerIds.includes(layerId)) {
-          newSelectedIds = $doc.selectedLayerIds.filter(id => id !== layerId)
+        if (currentPage.selectedLayerIds.includes(layerId)) {
+          newSelectedIds = currentPage.selectedLayerIds.filter(id => id !== layerId)
         } else {
-          newSelectedIds = [...$doc.selectedLayerIds, layerId]
+          newSelectedIds = [...currentPage.selectedLayerIds, layerId]
         }
       } else {
         newSelectedIds = [layerId]
       }
 
-      return { ...$doc, selectedLayerIds: newSelectedIds }
+      newPages[$doc.currentPageIndex] = { ...currentPage, selectedLayerIds: newSelectedIds }
+      return { ...$doc, pages: newPages }
     })
   },
 
-  // Deselect all layers
+  // Deselect all layers on current page
   deselectAll() {
-    document.update($doc => ({
-      ...$doc,
-      selectedLayerIds: []
-    }))
+    document.update($doc => {
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      newPages[$doc.currentPageIndex] = { ...currentPage, selectedLayerIds: [] }
+      return { ...$doc, pages: newPages }
+    })
   },
 
-  // Reorder layers (for drag-and-drop in layers panel)
+  // Reorder layers on current page (for drag-and-drop in layers panel)
   reorderLayers(fromIndex, toIndex) {
     document.update($doc => {
-      const newLayers = [...$doc.layers]
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const newLayers = [...currentPage.layers]
       const [layer] = newLayers.splice(fromIndex, 1)
       newLayers.splice(toIndex, 0, layer)
 
+      newPages[$doc.currentPageIndex] = { ...currentPage, layers: newLayers }
       this.saveHistory()
 
-      return { ...$doc, layers: newLayers }
+      return { ...$doc, pages: newPages }
     })
+  },
+
+  // Add a new page
+  addPage() {
+    document.update($doc => {
+      const newPages = [...$doc.pages, createPage()]
+      this.saveHistory()
+      return {
+        ...$doc,
+        pages: newPages,
+        currentPageIndex: newPages.length - 1
+      }
+    })
+  },
+
+  // Delete a page
+  deletePage(index) {
+    document.update($doc => {
+      if ($doc.pages.length <= 1) return $doc // Can't delete last page
+
+      const newPages = $doc.pages.filter((_, i) => i !== index)
+      const newCurrentIndex = Math.min($doc.currentPageIndex, newPages.length - 1)
+      this.saveHistory()
+
+      return {
+        ...$doc,
+        pages: newPages,
+        currentPageIndex: newCurrentIndex
+      }
+    })
+  },
+
+  // Select a page
+  selectPage(index) {
+    document.update($doc => ({
+      ...$doc,
+      currentPageIndex: index
+    }))
   },
 
   // Set active tool
@@ -307,6 +412,20 @@ export const layerActions = {
       ...$doc,
       canvas: { ...$doc.canvas, ...updates }
     }))
+  },
+
+  // Set which pages a layer spans across
+  setLayerSpanPages(layerId, pageIndices) {
+    document.update($doc => {
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const newLayers = currentPage.layers.map(layer =>
+        layer.id === layerId ? { ...layer, spanPages: pageIndices } : layer
+      )
+      newPages[$doc.currentPageIndex] = { ...currentPage, layers: newLayers }
+      this.saveHistory()
+      return { ...$doc, pages: newPages }
+    })
   },
 
   // Save current state to history
@@ -374,11 +493,15 @@ export default {
   selectedLayers,
   canvas,
   activeTool,
+  pages,
+  currentPageIndex,
+  currentPage,
   history,
   canUndo,
   canRedo,
   layerActions,
   createLayer,
+  createPage,
   LayerType,
   BlendMode,
   Tool

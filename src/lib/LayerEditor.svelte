@@ -1,13 +1,37 @@
 <script>
   import { onMount } from 'svelte'
-  import { document, layerActions, canUndo, canRedo, createLayer, LayerType, Tool } from './layerStore'
+  import { document, layerActions, canUndo, canRedo, createLayer, LayerType, Tool, pages, currentPageIndex } from './layerStore'
   import LayersPanel from './LayersPanel.svelte'
   import ToolsPanel from './ToolsPanel.svelte'
   import PropertiesPanel from './PropertiesPanel.svelte'
   import FabricCanvas from './FabricCanvas.svelte'
+  import AppStoreSizeSelector from './AppStoreSizeSelector.svelte'
+  import PageNavigator from './PageNavigator.svelte'
 
   let fabricCanvas
   let fileInput
+  let showSizeSelector = true
+
+  function handleSizeSelect(event) {
+    const size = event.detail
+    layerActions.updateCanvas({
+      width: size.width,
+      height: size.height
+    })
+    showSizeSelector = false
+  }
+
+  function handleAddPage() {
+    layerActions.addPage()
+  }
+
+  function handleSelectPage(event) {
+    layerActions.selectPage(event.detail)
+  }
+
+  function handleDeletePage(event) {
+    layerActions.deletePage(event.detail)
+  }
 
   onMount(() => {
     // Add keyboard shortcuts
@@ -154,7 +178,23 @@
   }
 </script>
 
+<!-- App Store Size Selector Modal -->
+<AppStoreSizeSelector bind:show={showSizeSelector} on:select={handleSizeSelect} />
+
 <div class="layer-editor">
+  <!-- Page Navigator -->
+  {#if !showSizeSelector}
+    <div class="page-navigator-section">
+      <PageNavigator
+        pages={$pages}
+        currentPageIndex={$currentPageIndex}
+        on:addPage={handleAddPage}
+        on:selectPage={handleSelectPage}
+        on:deletePage={handleDeletePage}
+      />
+    </div>
+  {/if}
+
   <!-- Top Toolbar -->
   <div class="toolbar">
     <div class="toolbar-section">
@@ -254,6 +294,12 @@
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: #fff;
     overflow: hidden;
+  }
+
+  .page-navigator-section {
+    padding: 1rem 1rem 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .toolbar {

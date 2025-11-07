@@ -1,7 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte'
   import * as fabric from 'fabric'
-  import { document, layers, canvas, activeTool, selectedLayerIds, layerActions, LayerType, Tool } from './layerStore'
+  import { document, layers, canvas, activeTool, selectedLayerIds, layerActions, LayerType, Tool, pages, currentPageIndex } from './layerStore'
 
   let canvasElement
   let fabricCanvas
@@ -96,11 +96,30 @@
     fabricCanvas.backgroundColor = $canvas.backgroundColor
     layerObjects.clear()
 
-    // Render each layer in order
+    // Collect all layers to render on current page
+    const layersToRender = []
+
+    // Add layers from current page
     $layers.forEach(layer => {
       if (layer.visible) {
-        renderLayer(layer)
+        layersToRender.push({ layer, fromCurrentPage: true })
       }
+    })
+
+    // Add layers from other pages that span to current page
+    $pages.forEach((page, pageIndex) => {
+      if (pageIndex !== $currentPageIndex) {
+        page.layers.forEach(layer => {
+          if (layer.visible && layer.spanPages && layer.spanPages.includes($currentPageIndex)) {
+            layersToRender.push({ layer, fromCurrentPage: false })
+          }
+        })
+      }
+    })
+
+    // Render each layer in order
+    layersToRender.forEach(({ layer }) => {
+      renderLayer(layer)
     })
 
     fabricCanvas.renderAll()
@@ -216,8 +235,8 @@
     img.applyFilters()
   }
 
-  // Update canvas when layers change
-  $: if (fabricCanvas && $layers) {
+  // Update canvas when layers change or page changes
+  $: if (fabricCanvas && ($layers || $pages || $currentPageIndex !== undefined)) {
     renderAllLayers()
   }
 

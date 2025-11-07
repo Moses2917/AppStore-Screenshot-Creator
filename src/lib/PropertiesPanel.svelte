@@ -1,7 +1,8 @@
 <script>
-  import { selectedLayers, layerActions, LayerType } from './layerStore'
+  import { selectedLayers, layerActions, LayerType, pages, currentPageIndex } from './layerStore'
 
   $: selectedLayer = $selectedLayers.length === 1 ? $selectedLayers[0] : null
+  $: totalPages = $pages.length
 
   function updatePosition(axis, value) {
     if (!selectedLayer) return
@@ -42,6 +43,32 @@
     if (!selectedLayer) return
     const newFilters = selectedLayer.filters.filter((_, i) => i !== index)
     layerActions.updateLayer(selectedLayer.id, { filters: newFilters })
+  }
+
+  function togglePageSpan(pageIndex) {
+    if (!selectedLayer) return
+    const currentSpan = selectedLayer.spanPages || []
+    let newSpan
+
+    if (currentSpan.includes(pageIndex)) {
+      // Remove page from span
+      newSpan = currentSpan.filter(p => p !== pageIndex)
+    } else {
+      // Add page to span
+      newSpan = [...currentSpan, pageIndex].sort((a, b) => a - b)
+    }
+
+    // If empty array, set to null (only show on current page)
+    layerActions.setLayerSpanPages(selectedLayer.id, newSpan.length > 0 ? newSpan : null)
+  }
+
+  function isPageSpanned(pageIndex) {
+    if (!selectedLayer) return false
+    if (!selectedLayer.spanPages) {
+      // null means only on current page
+      return pageIndex === $currentPageIndex
+    }
+    return selectedLayer.spanPages.includes(pageIndex)
   }
 
   const filterTypes = [
@@ -178,6 +205,30 @@
             </select>
           </div>
         </div>
+
+        <!-- Span Pages (for image layers) -->
+        {#if totalPages > 1}
+          <div class="property-section">
+            <h4>📄 Span Pages</h4>
+            <p class="section-hint">Select which pages this layer appears on</p>
+
+            <div class="page-span-grid">
+              {#each $pages as page, index}
+                <button
+                  class="page-span-btn"
+                  class:active={isPageSpanned(index)}
+                  on:click={() => togglePageSpan(index)}
+                  title="Toggle page {index + 1}"
+                >
+                  Page {index + 1}
+                  {#if isPageSpanned(index)}
+                    <span class="checkmark">✓</span>
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
       {/if}
 
       <!-- Text Properties (only for text layers) -->
@@ -397,5 +448,51 @@
   .hint {
     font-size: 0.85rem;
     opacity: 0.7;
+  }
+
+  .section-hint {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    margin: 0 0 1rem 0;
+    font-style: italic;
+  }
+
+  .page-span-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .page-span-btn {
+    position: relative;
+    padding: 0.75rem 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .page-span-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(0, 153, 255, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .page-span-btn.active {
+    background: rgba(0, 153, 255, 0.25);
+    border-color: #0099ff;
+    box-shadow: 0 0 10px rgba(0, 153, 255, 0.3);
+  }
+
+  .checkmark {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 0.75rem;
+    color: #00ff88;
   }
 </style>
