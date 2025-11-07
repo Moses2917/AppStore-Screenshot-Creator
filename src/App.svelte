@@ -8,7 +8,10 @@
 </script>
 
 <div class="app" class:light={$theme === 'light'}>
-  <ThemeToggle />
+  <!-- Theme Toggle moved to bottom right -->
+  <div class="theme-toggle-wrapper">
+    <ThemeToggle />
+  </div>
 
   <!-- Editor Mode Toggle -->
   <div class="mode-toggle">
@@ -42,6 +45,13 @@
     min-height: 100vh;
     transition: background-color 0.3s, color 0.3s;
     position: relative;
+  }
+
+  .theme-toggle-wrapper {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9999;
   }
 
   .mode-toggle {
