@@ -590,6 +590,45 @@ export const layerActions = {
     }))
   },
 
+  // Template management
+  applyTemplate(template) {
+    document.update($doc => {
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+
+      // Apply template layers
+      const templateLayers = template.layers.map(layerConfig => {
+        return createLayer(layerConfig.type, {
+          name: layerConfig.name,
+          position: layerConfig.position || { x: 0, y: 0 },
+          layerData: layerConfig.data || {}
+        })
+      })
+
+      // Update canvas size and background
+      const newCanvas = {
+        ...$doc.canvas,
+        width: template.canvasSize.width,
+        height: template.canvasSize.height,
+        backgroundColor: template.backgroundColor
+      }
+
+      newPages[$doc.currentPageIndex] = {
+        ...currentPage,
+        layers: templateLayers,
+        selectedLayerIds: []
+      }
+
+      this.saveHistory()
+
+      return {
+        ...$doc,
+        pages: newPages,
+        canvas: newCanvas
+      }
+    })
+  },
+
   // Save current state to history
   saveHistory() {
     const $doc = get(document)

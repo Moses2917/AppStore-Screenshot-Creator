@@ -8,11 +8,13 @@
   import AppStoreSizeSelector from './AppStoreSizeSelector.svelte'
   import PageNavigator from './PageNavigator.svelte'
   import DeviceFrameSelector from './DeviceFrameSelector.svelte'
+  import TemplateSelector from './TemplateSelector.svelte'
 
   let fabricCanvas
   let fileInput
   let showSizeSelector = true
   let showDeviceFrameSelector = false
+  let showTemplateSelector = false
 
   function handleSizeSelect(event) {
     const size = event.detail
@@ -194,6 +196,12 @@
     layerActions.addLayer(frameLayer)
     showDeviceFrameSelector = false
   }
+
+  function handleTemplateSelect(event) {
+    const template = event.detail
+    layerActions.applyTemplate(template)
+    showTemplateSelector = false
+  }
 </script>
 
 <!-- App Store Size Selector Modal -->
@@ -201,6 +209,9 @@
 
 <!-- Device Frame Selector Modal -->
 <DeviceFrameSelector bind:show={showDeviceFrameSelector} on:select={handleDeviceFrameSelect} />
+
+<!-- Template Selector Modal -->
+<TemplateSelector bind:show={showTemplateSelector} on:select={handleTemplateSelect} />
 
 <div class="layer-editor">
   <!-- Page Navigator -->
@@ -219,6 +230,10 @@
   <!-- Top Toolbar -->
   <div class="toolbar">
     <div class="toolbar-section">
+      <button class="toolbar-btn highlight" on:click={() => showTemplateSelector = true} title="Browse Templates">
+        🎨 Templates
+      </button>
+
       <button class="toolbar-btn" on:click={triggerFileUpload} title="Add Image">
         📁 Open
       </button>
@@ -404,6 +419,17 @@
     background: rgba(0, 153, 255, 0.3);
     border-color: #0099ff;
     box-shadow: 0 0 8px rgba(0, 153, 255, 0.3);
+  }
+
+  .toolbar-btn.highlight {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(139, 92, 246, 0.3));
+    border-color: #a855f7;
+    font-weight: 600;
+  }
+
+  .toolbar-btn.highlight:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(139, 92, 246, 0.4));
+    border-color: #c084fc;
   }
 
   .toolbar-btn.primary {
