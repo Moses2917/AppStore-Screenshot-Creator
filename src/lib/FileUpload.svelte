@@ -101,8 +101,8 @@
 
   .upload-zone:hover,
   .upload-zone.dragging {
-    border-color: #667eea;
-    background: rgba(102, 126, 234, 0.1);
+    border-color: #00d4ff;
+    background: rgba(0, 153, 255, 0.1);
     transform: translateY(-2px);
   }
 
