@@ -61,7 +61,8 @@ export function createLayer(type, data = {}) {
     scale: data.scale || { x: 1, y: 1 },
     rotation: data.rotation || 0,
     filters: data.filters || [],
-    data: data.layerData || {}
+    data: data.layerData || {},
+    spanPages: data.spanPages || null // null means only current page, or array of page indices
   }
 }
 
@@ -411,6 +412,20 @@ export const layerActions = {
       ...$doc,
       canvas: { ...$doc.canvas, ...updates }
     }))
+  },
+
+  // Set which pages a layer spans across
+  setLayerSpanPages(layerId, pageIndices) {
+    document.update($doc => {
+      const newPages = [...$doc.pages]
+      const currentPage = newPages[$doc.currentPageIndex]
+      const newLayers = currentPage.layers.map(layer =>
+        layer.id === layerId ? { ...layer, spanPages: pageIndices } : layer
+      )
+      newPages[$doc.currentPageIndex] = { ...currentPage, layers: newLayers }
+      this.saveHistory()
+      return { ...$doc, pages: newPages }
+    })
   },
 
   // Save current state to history
