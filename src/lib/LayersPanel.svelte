@@ -106,7 +106,11 @@
         </div>
 
         <div class="layer-preview">
-          <span class="layer-icon">{getLayerIcon(layer.type)}</span>
+          {#if layer.type === LayerType.IMAGE && layer.data.imageUrl}
+            <img src={layer.data.imageUrl} alt={layer.name} class="layer-thumbnail" />
+          {:else}
+            <span class="layer-icon">{getLayerIcon(layer.type)}</span>
+          {/if}
         </div>
 
         <div class="layer-info">
@@ -297,6 +301,14 @@
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .layer-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .layer-icon {

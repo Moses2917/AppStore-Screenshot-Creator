@@ -259,20 +259,25 @@
   }
 
   // Update canvas when layers change or page changes
-  $: if (fabricCanvas) {
-    // Reference all dependencies to trigger reactivity
-    $layers
-    $pages
-    $currentPageIndex
+  $: if (fabricCanvas && ($layers || $pages || $currentPageIndex >= 0)) {
     renderAllLayers()
   }
 
   // Update canvas properties
   $: if (fabricCanvas && $canvas) {
+    const needsResize =
+      fabricCanvas.width !== $canvas.width ||
+      fabricCanvas.height !== $canvas.height
+
     fabricCanvas.setWidth($canvas.width)
     fabricCanvas.setHeight($canvas.height)
     fabricCanvas.setBackgroundColor($canvas.backgroundColor, () => {
-      fabricCanvas.renderAll()
+      if (needsResize) {
+        // Re-render all layers when canvas size changes
+        renderAllLayers()
+      } else {
+        fabricCanvas.renderAll()
+      }
     })
   }
 
