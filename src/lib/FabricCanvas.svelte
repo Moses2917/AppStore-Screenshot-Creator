@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte'
-  import { fabric } from 'fabric'
+  import * as fabric from 'fabric'
   import { document, layers, canvas, activeTool, selectedLayerIds, layerActions, LayerType, Tool } from './layerStore'
 
   let canvasElement
