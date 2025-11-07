@@ -337,7 +337,8 @@
 
       {#if $currentScreenshot}
         <EditorTabs bind:activeTab>
-          <div slot="design" class="tab-content">
+          {#if activeTab === 'design'}
+          <div class="tab-content">
             <div class="control-section">
               <h3>Templates</h3>
               <TemplateSelector on:select={selectTemplate} />
@@ -394,8 +395,10 @@
               </div>
             </div>
           </div>
+          {/if}
 
-          <div slot="text" class="tab-content">
+          {#if activeTab === 'text'}
+          <div class="tab-content">
             <div class="control-section">
               <h3>Text Content</h3>
 
@@ -453,8 +456,10 @@
               </div>
             </div>
           </div>
+          {/if}
 
-          <div slot="effects" class="tab-content">
+          {#if activeTab === 'effects'}
+          <div class="tab-content">
             <div class="control-section">
               <h3>Color Adjustments</h3>
 
@@ -516,8 +521,10 @@
               </div>
             </div>
           </div>
+          {/if}
 
-          <div slot="decorations" class="tab-content">
+          {#if activeTab === 'decorations'}
+          <div class="tab-content">
             <div class="control-section">
               <h3>Add Decorations</h3>
               <p class="section-description">Enhance your screenshot with stickers, logos, or custom graphics</p>
@@ -559,8 +566,10 @@
               </div>
             {/if}
           </div>
+          {/if}
 
-          <div slot="projects" class="tab-content">
+          {#if activeTab === 'projects'}
+          <div class="tab-content">
             <div class="control-section">
               <h3>Save Project</h3>
 
@@ -598,6 +607,7 @@
               </div>
             {/if}
           </div>
+          {/if}
         </EditorTabs>
 
         <div class="controls-footer">

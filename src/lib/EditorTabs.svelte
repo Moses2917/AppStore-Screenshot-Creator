@@ -29,7 +29,7 @@
   </div>
 
   <div class="tabs-content">
-    <slot name={activeTab} />
+    <slot />
   </div>
 </div>
 
