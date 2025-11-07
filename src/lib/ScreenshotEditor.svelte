@@ -21,6 +21,23 @@
   $: config = $currentScreenshot?.config || {}
   $: hasScreenshots = $screenshots.length > 0
 
+  // Reactive styles
+  $: backgroundStyle = !config ? '' :
+    config.backgroundType === 'gradient'
+      ? `background: ${generateGradient(config.gradientColors, config.gradientAngle)};`
+      : `background-color: ${config.backgroundColor};`
+
+  $: textStyle = !config ? '' :
+    `color: ${config.textColor};
+     font-size: ${config.fontSize}px;
+     font-family: ${config.fontFamily};
+     font-weight: ${config.fontWeight};
+     ${config.textShadow ? 'text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);' : ''}`
+
+  $: imageStyle = !config ? '' :
+    `filter: ${applyImageFilters(config)};
+     ${config.rotation ? `transform: rotate(${config.rotation}deg);` : ''}`
+
   onMount(() => {
     savedProjects = getSavedProjects()
 
@@ -178,45 +195,6 @@
         projectName = ''
       }
     }
-  }
-
-  function getBackgroundStyle() {
-    if (!config) return ''
-
-    if (config.backgroundType === 'gradient') {
-      return `background: ${generateGradient(config.gradientColors, config.gradientAngle)};`
-    }
-    return `background-color: ${config.backgroundColor};`
-  }
-
-  function getTextStyle() {
-    if (!config) return ''
-
-    let style = `
-      color: ${config.textColor};
-      font-size: ${config.fontSize}px;
-      font-family: ${config.fontFamily};
-      font-weight: ${config.fontWeight};
-    `
-
-    if (config.textShadow) {
-      style += 'text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);'
-    }
-
-    return style
-  }
-
-  function getImageStyle() {
-    if (!config) return ''
-
-    const filters = applyImageFilters(config)
-    let style = `filter: ${filters};`
-
-    if (config.rotation) {
-      style += `transform: rotate(${config.rotation}deg);`
-    }
-
-    return style
   }
 
   // Drag and drop functionality
@@ -557,11 +535,11 @@
 
   <div class="preview">
     {#if hasScreenshots && $currentScreenshot}
-      <div class="canvas-container" bind:this={canvasRef} style={getBackgroundStyle()}>
+      <div class="canvas-container" bind:this={canvasRef} style={backgroundStyle}>
         {#if config.textTop}
           <div
             class="text-overlay draggable"
-            style="{getTextStyle()} position: absolute; left: {config.textTopPosition?.x || 50}%; top: {config.textTopPosition?.y || 15}%; transform: translate(-50%, -50%); cursor: move;"
+            style="{textStyle} position: absolute; left: {config.textTopPosition?.x || 50}%; top: {config.textTopPosition?.y || 15}%; transform: translate(-50%, -50%); cursor: move;"
             on:mousedown={(e) => startDrag({ type: 'textTop' }, e)}
             role="button"
             tabindex="0"
@@ -580,14 +558,14 @@
         >
           {#if config.deviceFrame === 'iphone'}
             <div class="device-frame iphone">
-              <img src={$currentScreenshot.image} alt="Screenshot" style={getImageStyle()} />
+              <img src={$currentScreenshot.image} alt="Screenshot" style={imageStyle} />
             </div>
           {:else if config.deviceFrame === 'ipad'}
             <div class="device-frame ipad">
-              <img src={$currentScreenshot.image} alt="Screenshot" style={getImageStyle()} />
+              <img src={$currentScreenshot.image} alt="Screenshot" style={imageStyle} />
             </div>
           {:else}
-            <img src={$currentScreenshot.image} alt="Screenshot" class="no-frame" style={getImageStyle()} />
+            <img src={$currentScreenshot.image} alt="Screenshot" class="no-frame" style={imageStyle} />
           {/if}
           <div class="drag-hint">Drag to move</div>
         </div>
@@ -595,7 +573,7 @@
         {#if config.textBottom}
           <div
             class="text-overlay draggable"
-            style="{getTextStyle()} position: absolute; left: {config.textBottomPosition?.x || 50}%; top: {config.textBottomPosition?.y || 85}%; transform: translate(-50%, -50%); cursor: move;"
+            style="{textStyle} position: absolute; left: {config.textBottomPosition?.x || 50}%; top: {config.textBottomPosition?.y || 85}%; transform: translate(-50%, -50%); cursor: move;"
             on:mousedown={(e) => startDrag({ type: 'textBottom' }, e)}
             role="button"
             tabindex="0"
